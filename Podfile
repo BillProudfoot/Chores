@@ -7,5 +7,6 @@ target 'Chores' do
   # Pods for Chores
 
 pod 'RealmSwift'
+pod 'SwipeCellKit'
 
 end
