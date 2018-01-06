@@ -8,9 +8,11 @@
 
 import UIKit
 import RealmSwift
-import SwipeCellKit
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+
+
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
@@ -21,7 +23,7 @@ class CategoryViewController: UITableViewController {
 
         loadCategories()
         
-        tableView.rowHeight = 80.0
+        tableView.separatorStyle = .none
         
     }
 
@@ -32,16 +34,21 @@ class CategoryViewController: UITableViewController {
         
     }
     
-//    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-//        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell") as! SwipeTableViewCell
-//        cell.delegate = self
-//        return cell
-//    }
+
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath) as! SwipeTableViewCell
-        cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories added yet"
-        cell.delegate = self
+        
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        
+        if let category = categories?[indexPath.row] {
+            
+            cell.textLabel?.text = category.name
+        
+            guard let categoryColor = UIColor(hexString: category.color) else { fatalError()}
+
+            cell.backgroundColor = categoryColor
+            cell.textLabel?.textColor = ContrastColorOf(categoryColor, returnFlat: true)
+        }
         
         return cell
     }
@@ -79,6 +86,7 @@ class CategoryViewController: UITableViewController {
             
             let newCategory = Category()
             newCategory.name = textField.text!
+            newCategory.color = UIColor.randomFlat.hexValue()
             
             self.save(category: newCategory)
         }
@@ -113,38 +121,19 @@ class CategoryViewController: UITableViewController {
         tableView.reloadData()
         
     }
-}
-
-//MARK - Swipe Cell Delegate Methods
-
-extension CategoryViewController: SwipeTableViewCellDelegate {
     
-    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]? {
-        guard orientation == .right else { return nil }
-        
-        let deleteAction = SwipeAction(style: .destructive, title: "Delete") { action, indexPath in
-            // handle action by updating model with deletion
-            
-            if let categoryForDeletion = self.categories?[indexPath.row] {
-                do {
-                    try self.realm.write {
-                        self.realm.delete(categoryForDeletion)
-                    }
-                } catch {
-                    print("error in deleting category, \(error)")
+    //MARK: Delete Data From Swipe
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let categoryForDeletion = self.categories?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
                 }
+            } catch {
+                print("Error deleting Category, \(error)")
             }
         }
-        
-        // customize the action appearance
-        deleteAction.image = UIImage(named: "delete-icon")
-        
-        return [deleteAction]
-    }
-    
-    func tableView(_ tableView: UITableView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeTableOptions {
-        var options = SwipeTableOptions()
-        options.expansionStyle = .destructive
-        return options
     }
 }
+
